@@ -141,5 +141,7 @@ C:\Users\Nodo\source\repos\EndTown\EndTown\bin\Debug\net8.0\EndTown.runtimeconfi
 C:\Users\Nodo\source\repos\EndTown\EndTown\bin\Debug\net8.0\EndTown.pdb
 C:\Users\Nodo\source\repos\EndTown\EndTown\obj\Debug\net8.0\EndTown.genruntimeconfig.cache
 C:\Users\Nodo\source\repos\EndTown\EndTown\obj\Debug\net8.0\ref\EndTown.dll
-C:\Users\Nodo\source\repos\EndTown\EndTown\obj\Debug\net8.0\staticwebassets.upToDateCheck.txt
 C:\Users\Nodo\source\repos\EndTown\EndTown\obj\Debug\net8.0\swae.build.ex.cache
+C:\Users\Nodo\source\repos\EndTown\EndTown\obj\Debug\net8.0\EndTown.sourcelink.json
+C:\Users\Nodo\source\repos\EndTown\EndTown\bin\Debug\net8.0\BCrypt-Net-Next.dll
+C:\Users\Nodo\source\repos\EndTown\EndTown\obj\Debug\net8.0\staticwebassets.upToDateCheck.txt

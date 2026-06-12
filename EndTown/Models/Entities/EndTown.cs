@@ -16,13 +16,13 @@ namespace EndTown.Models.Entities
         public string LogoUrl { get; set; } = string.Empty;
         public string BannerUrl { get; set; } = string.Empty;
 
-        // სტატისტიკა
+   
         public int TotalUsers { get; set; }
         public int TotalPosts { get; set; }
         public int TotalComments { get; set; }
         public int TotalLikes { get; set; }
 
-        // კონფიგურაცია
+     
         public bool RegistrationOpen { get; set; } = true;
         public bool PublicAccess { get; set; } = true;
         public int MaxPostLength { get; set;  } = 5000;
@@ -31,7 +31,7 @@ namespace EndTown.Models.Entities
         public DateTime CreatedAt { get; set; } = DateTime.UtcNow;
         public DateTime UpdatedAt { get; set; } = DateTime.UtcNow;
 
-        // მეთოდები
+  
         public void UpdateStatistics(int users, int posts, int comments, int likes)
         {
             TotalUsers = users;

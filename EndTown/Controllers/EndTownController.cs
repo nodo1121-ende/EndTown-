@@ -1,8 +1,7 @@
-﻿using Microsoft.AspNetCore.Authorization;
+﻿using EndTown.Models.Entities;
+using EndTown.Services;
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
-using Microsoft.EntityFrameworkCore;
-using EndTown.Data;
-using EndTown.Models.Entities;
 
 namespace EndTown.Controllers
 {
@@ -10,203 +9,69 @@ namespace EndTown.Controllers
     [ApiController]
     public class PlatformsController : ControllerBase
     {
-        private readonly EndTownDbContext _context;
+        private readonly IPlatformService _service;
 
-        public PlatformsController(EndTownDbContext context)
+        public PlatformsController(IPlatformService service)
         {
-            _context = context;
+            _service = service;
         }
 
-        // GET: api/platforms
         [HttpGet]
-        public async Task<ActionResult<IEnumerable<Platform>>> GetPlatforms()
+        public async Task<IActionResult> GetAll()
         {
-            var platforms = await _context.Platforms.ToListAsync();
+            var platforms = await _service.GetAllAsync();
             return Ok(platforms);
         }
 
-        // GET: api/platforms/5
         [HttpGet("{id}")]
-        public async Task<ActionResult<Platform>> GetPlatform(int id)
+        public async Task<IActionResult> GetById(int id)
         {
-            var platform = await _context.Platforms.FindAsync(id);
-
+            var platform = await _service.GetByIdAsync(id);
             if (platform == null)
-            {
-                return NotFound(new { message = $"Platform with ID {id} not found" });
-            }
-
+                return NotFound(new { message = $"Platform {id} not found" });
             return Ok(platform);
         }
 
-        // POST: api/platforms
-        [Authorize] // მხოლოდ ავთენტიფიცირებული მომხმარებლებისთვის
+        [Authorize]
         [HttpPost]
-        public async Task<ActionResult<Platform>> CreatePlatform(Platform platform)
+        public async Task<IActionResult> Create([FromBody] Platform platform)
         {
             if (!ModelState.IsValid)
-            {
                 return BadRequest(ModelState);
-            }
 
-            // შევამოწმოთ უნიკალურობა
-            var existingPlatform = await _context.Platforms
-                .FirstOrDefaultAsync(p => p.Name.ToLower() == platform.Name.ToLower());
+            if (await _service.NameExistsAsync(platform.Name))
+                return Conflict(new { message = $"Platform '{platform.Name}' already exists" });
 
-            if (existingPlatform != null)
-            {
-                return Conflict(new { message = $"Platform with name '{platform.Name}' already exists" });
-            }
-
-            platform.CreatedAt = DateTime.UtcNow;
-            platform.UpdatedAt = DateTime.UtcNow;
-
-            _context.Platforms.Add(platform);
-            await _context.SaveChangesAsync();
-
-            return CreatedAtAction(nameof(GetPlatform), new { id = platform.Id }, platform);
+            var created = await _service.CreateAsync(platform);
+            return CreatedAtAction(nameof(GetById), new { id = created.Id }, created);
         }
 
-        // PUT: api/platforms/5
         [Authorize]
         [HttpPut("{id}")]
-        public async Task<IActionResult> UpdatePlatform(int id, Platform platform)
+        public async Task<IActionResult> Update(int id, [FromBody] Platform platform)
         {
-            if (id != platform.Id)
-            {
-                return BadRequest(new { message = "ID mismatch" });
-            }
-
             if (!ModelState.IsValid)
-            {
                 return BadRequest(ModelState);
-            }
 
-            var existingPlatform = await _context.Platforms.FindAsync(id);
-            if (existingPlatform == null)
-            {
-                return NotFound();
-            }
+            if (await _service.NameExistsAsync(platform.Name))
+                return Conflict(new { message = $"Platform '{platform.Name}' already exists" });
 
-            // შევამოწმოთ უნიკალურობა (თუ სახელი შეცვლილია)
-            if (existingPlatform.Name != platform.Name)
-            {
-                var duplicatePlatform = await _context.Platforms
-                    .FirstOrDefaultAsync(p => p.Name.ToLower() == platform.Name.ToLower());
+            var updated = await _service.UpdateAsync(id, platform);
+            if (updated == null)
+                return NotFound(new { message = $"Platform {id} not found" });
 
-                if (duplicatePlatform != null)
-                {
-                    return Conflict(new { message = $"Platform with name '{platform.Name}' already exists" });
-                }
-            }
-
-            // განახლება
-            existingPlatform.Name = platform.Name;
-            existingPlatform.Description = platform.Description;
-            existingPlatform.LogoUrl = platform.LogoUrl;
-            existingPlatform.BannerUrl = platform.BannerUrl;
-            existingPlatform.RegistrationOpen = platform.RegistrationOpen;
-            existingPlatform.PublicAccess = platform.PublicAccess;
-            existingPlatform.MaxPostLength = platform.MaxPostLength;
-            existingPlatform.MaxCommentLength = platform.MaxCommentLength;
-            existingPlatform.UpdatedAt = DateTime.UtcNow;
-
-            try
-            {
-                await _context.SaveChangesAsync();
-            }
-            catch (DbUpdateConcurrencyException)
-            {
-                if (!PlatformExists(id))
-                {
-                    return NotFound();
-                }
-                throw;
-            }
-
-            return NoContent();
+            return Ok(updated);
         }
 
-        // PATCH: api/platforms/5/statistics
-        [Authorize]
-        [HttpPatch("{id}/statistics")]
-        public async Task<IActionResult> UpdateStatistics(int id, [FromBody] StatisticsUpdateDto statistics)
-        {
-            var platform = await _context.Platforms.FindAsync(id);
-            if (platform == null)
-            {
-                return NotFound();
-            }
-
-            platform.UpdateStatistics(
-                statistics.TotalUsers,
-                statistics.TotalPosts,
-                statistics.TotalComments,
-                statistics.TotalLikes
-            );
-
-            await _context.SaveChangesAsync();
-
-            return NoContent();
-        }
-
-        // DELETE: api/platforms/5
         [Authorize]
         [HttpDelete("{id}")]
-        public async Task<IActionResult> DeletePlatform(int id)
+        public async Task<IActionResult> Delete(int id)
         {
-            var platform = await _context.Platforms.FindAsync(id);
-            if (platform == null)
-            {
-                return NotFound();
-            }
-
-            _context.Platforms.Remove(platform);
-            await _context.SaveChangesAsync();
+            var deleted = await _service.DeleteAsync(id);
+            if (!deleted)
+                return NotFound(new { message = $"Platform {id} not found" });
 
             return NoContent();
         }
-
-        // GET: api/platforms/check-name?name=test
-        [HttpGet("check-name")]
-        public async Task<ActionResult<bool>> CheckPlatformName(string name)
-        {
-            if (string.IsNullOrWhiteSpace(name))
-            {
-                return BadRequest(new { message = "Name is required" });
-            }
-
-            var exists = await _context.Platforms
-                .AnyAsync(p => p.Name.ToLower() == name.ToLower());
-
-            return Ok(new { exists = exists });
-        }
-
-        // GET: api/platforms/registration-status/5
-        [HttpGet("registration-status/{id}")]
-        public async Task<ActionResult<bool>> GetRegistrationStatus(int id)
-        {
-            var platform = await _context.Platforms.FindAsync(id);
-            if (platform == null)
-            {
-                return NotFound();
-            }
-
-            return Ok(new { canRegister = platform.CanUserRegister() });
-        }
-
-        private bool PlatformExists(int id)
-        {
-            return _context.Platforms.Any(e => e.Id == id);
-        }
-    }
-
-    // DTO სტატისტიკის განახლებისთვის
-    public class StatisticsUpdateDto
-    {
-        public int TotalUsers { get; set; }
-        public int TotalPosts { get; set; }
-        public int TotalComments { get; set; }
-        public int TotalLikes { get; set; }
     }
 }
